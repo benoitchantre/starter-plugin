@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Script Name: update_version
+# Description: Appends the value of $1 prefixed by a dash to the version set in starter-plugin.php.
+#
+
+# Exit immediately on errors and undefined variables.
+set -eu
+
+# Exit immediately on errors in piped commands.
+set -o pipefail
+
+# Check if the version number is set
+if [ -z "${1:-}" ]; then
+	echo '::error::Missing $1 argument.'
+	exit 1
+fi
+
+# Get the version number suffix from the $1 argument
+suffix="${1}"
+
+# Extract the current version
+current_version=$(grep 'Version' starter-plugin.php | sed 's/.*Version[[:space:]]*:[[:space:]]*//' | awk '{print $1}')
+
+if [ -z "${current_version}" ]; then
+ echo "::error::Version is not defined in starter-plugin.php"
+ exit 1
+fi
+
+# Append the suffix to the version number
+line_number=$(grep -n 'Version' starter-plugin.php | cut -d: -f1)
+sed -i "${line_number}s/${current_version}/${current_version}-${suffix}/g" starter-plugin.php

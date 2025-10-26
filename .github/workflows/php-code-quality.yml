@@ -1,0 +1,242 @@
+name: PHP Code Quality
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Any change to PHP files should run checks.
+      - '**.php'
+      # These files configure Composer. Changes could affect the outcome.
+      - 'composer.*'
+      # This file configures PHPCS. Changes could affect the outcome.
+      - 'phpcs.xml.dist'
+      - 'phpcompat.xml.dist'
+      # This file configures PHPStan. Changes could affect the outcome.
+      - 'phpstan.neon.dist'
+      # This file is used to extract the required PHP version from the plugin. Changes could affect the outcome.
+      - '.github/scripts/extract_required_php_version'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/php-code-quality.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      # Any change to PHP files should run checks.
+      - '**.php'
+      # These files configure Composer. Changes could affect the outcome.
+      - 'composer.*'
+      # This file configures PHPCS. Changes could affect the outcome.
+      - 'phpcs.xml.dist'
+      - 'phpcompat.xml.dist'
+      # This file configures PHPStan. Changes could affect the outcome.
+      - 'phpstan.neon.dist'
+      # This file is used to extract the required PHP version from the plugin. Changes could affect the outcome.
+      - '.github/scripts/extract_required_php_version'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/php-code-quality.yml'
+  workflow_call:
+    inputs:
+      coding-standards:
+        description: 'Whether to run the PHP coding standards job.'
+        default: true
+        required: false
+        type: boolean
+      compatibility:
+        description: 'Whether to run the PHP compatibility job.'
+        default: true
+        required: false
+        type: boolean
+      static-analysis:
+        description: 'Whether to run the Static analysis job.'
+        default: true
+        required: false
+        type: boolean
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: php-code-quality-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.4'
+
+jobs:
+  coding-standards:
+    name: Coding standards
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || inputs.coding-standards }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+          tools: cs2pr
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
+
+      - name: Cache PHPCS scan cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/phpcs.json
+          key: ${{ runner.os }}-phpcs-cache-${{ hashFiles('**/composer.json', 'phpcs.xml.dist') }}
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --ansi
+
+      - name: Make Composer packages available globally
+        run: echo "${PWD}/vendor/bin" >> $GITHUB_PATH
+
+      - name: Log PHPCS debug information
+        run: phpcs -i
+
+      - name: Composer validate
+        run: composer validate --no-check-publish
+
+      - name: Run PHPCS
+        id: phpcs
+        run: phpcs --warning-severity=0 --report-full --cache=.cache/phpcs.json --report-checkstyle=.cache/phpcs-report.xml
+
+  compatibility:
+    name: PHP compatibility
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || inputs.compatibility }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+          tools: cs2pr
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
+
+      - name: Cache PHP compatibility scan cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/phpcompat.json
+          key: ${{ runner.os }}-phpcompat-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.json', 'phpcompat.xml.dist') }}
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --ansi
+
+      - name: Make Composer packages available globally
+        run: echo "${PWD}/vendor/bin" >> $GITHUB_PATH
+
+      - name: Log PHPCS debug information
+        run: phpcs -i
+
+      - name: Ensure PHPCompatibility testVersion matches required PHP version
+        run: |
+          REQUIRED_PHP_VERSION=$(./.github/scripts/extract_required_php_version)
+          TEST_VERSION=$(grep '<config name="testVersion"' phpcompat.xml.dist | sed -n 's/.*value="\([^"]*\)".*/\1/p' | sed 's/-$//')
+          if [ "$REQUIRED_PHP_VERSION" != "$TEST_VERSION" ]; then
+            echo "The testVersion value in phpcompat.xml.dist does not match the required PHP version."
+            echo "Required PHP version: $REQUIRED_PHP_VERSION"
+            echo "testVersion value: $TEST_VERSION"
+            exit 1
+          fi
+
+      - name: Run PHP compatibility test
+        id: phpcs
+        run: phpcs --standard=phpcompat.xml.dist --report-full --report-checkstyle=.cache/phpcs-compat-report.xml
+
+      - name: Show PHPCompatibility results in PR
+        if: ${{ always() && steps.phpcs.outcome == 'failure' }}
+        run: cs2pr .cache/phpcs-compat-report.xml
+
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || inputs.static-analysis }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+          tools: cs2pr
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --no-check-publish
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
+            ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
+
+      - name: Cache PHPCS scan cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/phpstan
+          key: ${{ runner.os }}-phpcs-stan-${{ hashFiles('**/composer.json', 'phpstan.neon.dist') }}
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --ansi
+
+      - name: Make Composer packages available globally
+        run: echo "${PWD}/vendor/bin" >> $GITHUB_PATH
+
+      - name: Log PHPCS debug information
+        run: phpcs -i
+
+      - name: Run PHP Stan
+        id: phpstan
+        run: php -d memory_limit=512M vendor/bin/phpstan analyze --no-progress --error-format github
+
+      - name: Create report
+        id: phpstan-report
+        if: ${{ always() && steps.phpstan.outcome == 'failure' }}
+        run: php -d memory_limit=512M vendor/bin/phpstan analyze --no-progress --error-format checkstyle 1> .cache/phpstan-report.xml 2> /dev/null || true
+
+      - name: Show PHP Stan results in PR
+        if: ${{ always() && steps.phpstan-report.outcome == 'success' }}
+        run: cs2pr .cache/phpstan-report.xml

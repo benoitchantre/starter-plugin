@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]'
+      - '[0-9]+.[0-9].[0-9]+'
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name.
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+    with:
+      build-number-suffix: false
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Set the PLUGIN_NAME environment variable
+        uses: ./.github/actions/set-plugin-name
+        with:
+          plugin-name: ${{ vars.PLUGIN_NAME }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ env.PLUGIN_NAME }}
+          path: dist/${{ env.PLUGIN_NAME }}
+
+      - name: Get the version
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create archive
+        id: archive
+        run: |
+          cd dist
+          ARCHIVE_NAME="${PLUGIN_NAME}.${{ steps.get_version.outputs.version }}.zip"
+          zip -r "${ARCHIVE_NAME}" "${PLUGIN_NAME}"
+          echo "name=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+          echo "path=dist/${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create a release draft
+        id: create_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ steps.get_version.outputs.version }} \
+          --repo ${{ github.repository }} \
+          --title "${{ steps.get_version.outputs.version }}" \
+          --generate-notes \
+          --draft
+
+      - name: Upload artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ steps.get_version.outputs.version }} ${{ steps.archive.outputs.path }} --repo ${{ github.repository }}

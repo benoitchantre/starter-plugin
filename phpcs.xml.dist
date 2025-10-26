@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<ruleset name="WordPress Coding Standards">
+	<description>Apply WordPress Coding Standards</description>
+
+	<!-- Only scan PHP files. -->
+	<arg name="extensions" value="php"/>
+
+	<!-- Whenever possible, cache the scan results and re-use those for unchanged files on the next scan. -->
+	<arg name="cache" value=".cache/phpcs.json"/>
+
+	<!-- Strip the filepaths down to the relevant bit. -->
+	<arg name="basepath" value="./"/>
+
+	<!-- Check up to 20 files simultaneously. -->
+	<arg name="parallel" value="20"/>
+
+	<!-- Show sniff codes in all reports. -->
+	<arg value="ps"/>
+
+	<!-- What to scan -->
+	<file>.</file>
+
+	<!-- Exclude directory without php files -->
+	<exclude-pattern>assets/*</exclude-pattern>
+
+	<!-- Exclude cache -->
+	<exclude-pattern>.cache/*</exclude-pattern>
+
+	<!-- Exclude tests -->
+	<exclude-pattern>test/*</exclude-pattern>
+
+	<!-- Exclude build files -->
+	<exclude-pattern>build/*</exclude-pattern>
+	<exclude-pattern>languages/*</exclude-pattern>
+
+	<!-- Exclude Composer files -->
+	<exclude-pattern>vendor/autoload.php</exclude-pattern>
+	<exclude-pattern>vendor/composer/*</exclude-pattern>
+
+	<!-- Exclude dev dependencies -->
+	<exclude-pattern>node_modules/*</exclude-pattern>
+	<exclude-pattern>vendor/dealerdirect/phpcodesniffer-composer-installer/*</exclude-pattern>
+	<exclude-pattern>vendor/dealerdirect/phpcompatibility-wp/*</exclude-pattern>
+	<exclude-pattern>vendor/php-stubs/*</exclude-pattern>
+	<exclude-pattern>vendor/phpcompatibility/*</exclude-pattern>
+	<exclude-pattern>vendor/phpcsstandards/*</exclude-pattern>
+	<exclude-pattern>vendor/phpstan/*</exclude-pattern>
+	<exclude-pattern>vendor/squizlabs/php_codesniffer/*</exclude-pattern>
+	<exclude-pattern>vendor/symfony/polyfill-php73/*</exclude-pattern>
+	<exclude-pattern>vendor/szepeviktor/phpstan-wordpress</exclude-pattern>
+	<exclude-pattern>vendor/swissspidy/phpstan-no-private/*</exclude-pattern>
+	<exclude-pattern>vendor/wp-coding-standards/*</exclude-pattern>
+
+	<!-- Rules: WordPress Coding Standards - see
+	https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress-Extra"/>
+
+	<rule ref="WordPress">
+		<!-- Exclude File DocBlock must have a package tag -->
+		<exclude name="Squiz.Commenting.FileComment.MissingPackageTag"/>
+
+		<!-- Exclude Inline comments must end in full-stops, exclamation marks, or question marks -->
+		<exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+	</rule>
+
+	<rule ref="WordPress.Files.FileName">
+     <!-- Allow PSR4 -->
+     <exclude name="WordPress.Files.FileName" />
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<!-- Set the expected text domain -->
+			<property name="text_domain" type="array">
+				<element value="starter-plugin"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- For CI, don't fail on warnings -->
+	<config name="ignore_warnings_on_exit" value="1"/>
+</ruleset>

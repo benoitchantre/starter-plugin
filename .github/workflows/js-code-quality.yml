@@ -1,0 +1,66 @@
+name: JavaScript Code Quality
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Any change to JavaScript files should run checks.
+      - '**.js'
+      # This file configures the Node.js version to use. Changes could affect the outcome.
+      - '.nvmrc'
+      # These files configure NPM. Changes could affect the outcome.
+      - 'package*.json'
+      # These files configure Prettier. Changes could affect the outcome.
+      - '.prettierignore'
+      - '.prettierrc'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/js-code-quality.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      # Any change to JavaScript files should run checks.
+      - '**.js'
+      # This file configures the Node.js version to use. Changes could affect the outcome.
+      - '.nvmrc'
+      # These files configure NPM. Changes could affect the outcome.
+      - 'package*.json'
+      # These files configure Prettier. Changes could affect the outcome.
+      - '.prettierignore'
+      - '.prettierrc'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/js-code-quality.yml'
+  workflow_call:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: js-code-quality-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install Node modules
+        run: npm ci
+
+      - name: Check Node.js compatibility
+        run: npm run check-engines
+
+      - name: Run ESLint
+        run: npm run lint:js

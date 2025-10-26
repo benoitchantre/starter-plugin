@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# Script Name: extract_required_php_version
+# Description: Extracts the required PHP version from style.css.
+#
+
+# Exit immediately on errors and undefined variables.
+set -eu
+
+# Exit immediately on errors in piped commands.
+set -o pipefail
+
+# Get the required PHP version from starter-plugin.php.
+php_version=$(grep 'Requires PHP' starter-plugin.php | sed 's/[^0-9.]//g' | sort -V | head -n1)
+
+# Exit if the PHP version is not found.
+if [ -z "${php_version}" ]; then
+	echo "::error::The required PHP version is not found in starter-plugin.php."
+	exit 1
+fi
+
+echo "${php_version}"

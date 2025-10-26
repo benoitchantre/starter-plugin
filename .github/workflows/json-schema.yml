@@ -1,0 +1,106 @@
+name: Validate JSON files
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Any change to block.json files should run checks.
+      - 'src/blocks/**/block.json'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/json-schema.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      # Any change to block.json files should run checks.
+      - 'src/blocks/**/block.json'
+      # Changes to workflow file should always verify all workflows are successful.
+      - '.github/workflows/json-schema.yml'
+  workflow_call:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: json-schema-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  validation:
+    name: Block schema validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check if block.json files exist
+        id: check-blocks
+        run: |
+          BLOCK_FILES=$(find src/blocks -name 'block.json' -type f 2>/dev/null | tr '\n' ' ' || true)
+          if [ -z "$BLOCK_FILES" ]; then
+            echo "No block.json files found in src/blocks/"
+            echo "block_files=" >> $GITHUB_OUTPUT
+          else
+            echo "Found block.json files: $BLOCK_FILES"
+            echo "block_files=${BLOCK_FILES%% }" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check that block.json files can be parsed
+        if: ${{ steps.check-blocks.outputs.block_files != '' }}
+        run: |
+          for file in ${{ steps.check-blocks.outputs.block_files }}; do
+            echo "Validating JSON syntax in: $file"
+            jq empty "$file"
+          done
+
+      - name: Validate block.json files against WordPress block schema
+        if: ${{ steps.check-blocks.outputs.block_files != '' }}
+        uses: cardinalby/schema-validator-action@v3
+        with:
+          file: 'src/blocks/**/block.json'
+          schema: 'https://schemas.wp.org/trunk/block.json'
+
+      - name: Validate block.json required fields
+        if: ${{ steps.check-blocks.outputs.block_files != '' }}
+        run: |
+          HAS_ERRORS=0
+          for file in ${{ steps.check-blocks.outputs.block_files }}; do
+            echo "Validating required fields in: $file"
+
+            # Check for required fields
+            if ! jq -e '.name' "$file" > /dev/null; then
+              echo "ERROR: Missing required 'name' field in $file"
+              HAS_ERRORS=1
+            fi
+
+            if ! jq -e '.title' "$file" > /dev/null; then
+              echo "ERROR: Missing required 'title' field in $file"
+              HAS_ERRORS=1
+            fi
+
+            if ! jq -e '.category' "$file" > /dev/null; then
+              echo "ERROR: Missing required 'category' field in $file"
+              HAS_ERRORS=1
+            fi
+
+            # Validate block name format (namespace/block-name)
+            BLOCK_NAME=$(jq -r '.name' "$file" 2>/dev/null || echo "")
+            if [[ "$BLOCK_NAME" != *"/"* ]]; then
+              echo "ERROR: Block name '$BLOCK_NAME' in $file must include a namespace (e.g., 'starter-blocks/my-block')"
+              HAS_ERRORS=1
+            fi
+
+            # Check if textdomain matches plugin
+            TEXTDOMAIN=$(jq -r '.textdomain // empty' "$file" 2>/dev/null || echo "")
+            if [ ! -z "$TEXTDOMAIN" ] && [ "$TEXTDOMAIN" != "starter-blocks" ]; then
+              echo "WARNING: textdomain '$TEXTDOMAIN' in $file should be 'starter-blocks'"
+            fi
+          done
+
+          if [ $HAS_ERRORS -eq 1 ]; then
+            echo "Block validation failed. See errors above."
+            exit 1
+          fi

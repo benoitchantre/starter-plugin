@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Script Name: purge_cache
+# Description: Purge static cache.
+#
+
+# Exit immediately on errors and undefined variables.
+set -eu
+
+# Exit immediately on errors in piped commands.
+set -o pipefail
+
+# If the first parameter is a directory, cd into it
+if [ -n "${1-}" ] && [ -d "$1" ]; then
+	cd "$1"
+fi
+
+# Check if the current directory is a WordPress installation.
+if ! wp core is-installed; then
+	echo "::error::WordPress is not installed in the current directory."
+	exit 1
+fi
+
+# Delete static cache.
+rm -rf "$(wp eval 'echo dirname( wp_upload_dir()["basedir"] );')/cache"

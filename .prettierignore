@@ -1,0 +1,7 @@
+.cache
+.github
+build
+languages
+node_modules
+package-lock.json
+vendor

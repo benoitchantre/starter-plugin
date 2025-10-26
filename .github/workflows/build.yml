@@ -1,0 +1,157 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # This file contains the excluded files from the dist archive. Changes could affect the outcome.
+      - '.distignore'
+      # This file contains the PHP version to use. Changes could affect the outcome.
+      - 'style.css'
+      # This file configures the Node.js version to use. Changes could affect the outcome.
+      - '.nvmrc'
+      # These files configure NPM. Changes could affect the outcome.
+      - 'package*.json'
+      # This file configures Webpack. Changes could affect the outcome.
+      - 'webpack-config.js'
+      # These files configure the tests. Changes could affect the outcome.
+      - 'test/modules/*.js'
+      - 'test/webpack-config.js'
+      # Changes to script files should always verify workflow is successful.
+      - '.github/scripts/*'
+      - 'bin/*'
+      # Changes to workflow files should always verify workflow is successful.
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      # This file contains the excluded files from the dist archive. Changes could affect the outcome.
+      - '.distignore'
+      # This file contains the PHP version to use. Changes could affect the outcome.
+      - 'style.css'
+      # This file configures the Node.js version to use. Changes could affect the outcome.
+      - '.nvmrc'
+      # These files configure NPM. Changes could affect the outcome.
+      - 'package*.json'
+      # This file configures Webpack. Changes could affect the outcome.
+      - 'webpack-config.js'
+      # These files configure the tests. Changes could affect the outcome.
+      - 'test/modules/*.js'
+      - 'test/webpack-config.js'
+      # Changes to script files should always verify workflow is successful.
+      - '.github/scripts/*'
+      - 'bin/*'
+      # Changes to workflow files should always verify workflow is successful.
+      - '.github/workflows/build.yml'
+  workflow_call:
+    inputs:
+      build-number-suffix:
+        description: 'Adds a build number suffix to the version'
+        type: boolean
+        default: true
+        required: false
+  workflow_dispatch:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Dist archive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install Node modules
+        run: npm ci
+
+      - name: Check Node.js compatibility
+        run: npm run check-engines
+
+      - name: Build the plugin assets
+        run: npm run build
+
+      - name: Install WP-CLI
+        uses: godaddy-wordpress/setup-wp-cli@1
+
+      - name: Build the language files
+        run: |
+          wp i18n make-json languages
+          wp i18n make-mo languages
+          wp i18n make-php languages
+
+      - name: Check that composer.json has dependencies to install
+        id: composer-require
+        run: echo "is-used=$(jq -e 'del(.require.php) | .require | length > 0' composer.json >/dev/null && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Check that composer.json has an autoload section
+        id: composer-autoloader
+        run: echo "is-used=$(jq -e '.autoload' composer.json >/dev/null && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Extract required PHP version from starter-blocks.php
+        id: required-php-version
+        if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
+        run: echo "version=$(./.github/scripts/extract_required_php_version)" >> $GITHUB_OUTPUT
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
+        with:
+          php-version: ${{ steps.required-php-version.outputs.version }}
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer cache
+        uses: actions/cache@v4
+        if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-no-dev-php${{ steps.required-php-version.outputs.version }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-no-dev-php${{ steps.required-php-version.outputs.version }}-${{ hashFiles('**/composer.lock') }}
+            ${{ runner.os }}-composer-no-dev-php${{ steps.required-php-version.outputs.version }}
+
+      - name: Install Composer dependencies
+        if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
+        run: composer install --no-dev --classmap-authoritative --no-interaction --no-progress --ansi
+
+      - name: Set the PLUGIN_NAME environment variable
+        uses: ./.github/actions/set-plugin-name
+        with:
+          plugin-name: ${{ vars.PLUGIN_NAME }}
+
+      - name: Update version with a build number suffix
+        if: ${{ inputs.build-number-suffix }}
+        run: ./.github/scripts/update_version "build-${{ github.run_number }}"
+
+      - name: Prepare the dist files
+        id: dist-files
+        run: |
+          DIST_FILES_PATH="dist-archive/${PLUGIN_NAME}"
+          mkdir -p "${DIST_FILES_PATH}" && rsync --archive --exclude-from=".distignore" --delete-before . "${DIST_FILES_PATH}"
+          echo "path=${DIST_FILES_PATH}" >> $GITHUB_OUTPUT
+
+      - name: Upload the release artifact
+        uses: actions/upload-artifact@v4
+        id: upload-artifact
+        with:
+          name: ${{ env.PLUGIN_NAME }}
+          path: ${{ steps.dist-files.outputs.path }}
+          retention-days: 1

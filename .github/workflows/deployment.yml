@@ -1,0 +1,99 @@
+name: Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment
+        options:
+          - staging
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name.
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  php-compatibility:
+    name: PHP compatibility
+    uses: ./.github/workflows/php-code-quality.yml
+    with:
+      coding-standards: false
+      compatibility: true
+      static-analysis: false
+
+  json-schema:
+    name: Schema validation
+    uses: ./.github/workflows/json-schema.yml
+
+  build:
+    name: Build
+    needs: [php-compatibility, json-schema]
+    uses: ./.github/workflows/build.yml
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.url }}
+    env:
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_CONFIG: ${{ secrets.SSH_CONFIG }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Set the PLUGIN_NAME environment variable
+        uses: ./.github/actions/set-plugin-name
+        with:
+          plugin-name: ${{ vars.PLUGIN_NAME }}
+
+      - name: Check that the plugin name equals DEPLOY_PATH basename
+        run: |
+          if [ "$(basename "${DEPLOY_PATH}")" != "${PLUGIN_NAME}" ] ; then
+            echo "Error: The deployment path (${DEPLOY_PATH}) must contain the plugin name (${PLUGIN_NAME})"
+            exit 1
+          fi
+
+      - name: Check that the parent directory of DEPLOY_PATH is "plugins"
+        run: |
+          if [ "$(basename $(dirname "${DEPLOY_PATH}"))" != "plugins" ] ; then
+            echo "Error: The parent directory of DEPLOY_PATH must be 'plugins'"
+            exit 1
+          fi
+
+      - name: Download artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ env.PLUGIN_NAME }}
+          path: dist/${{ env.PLUGIN_NAME }}
+
+      - name: Extract the host from the URL
+        env:
+          URL: ${{ vars.url }}
+        run: echo "HOST=$(echo ${URL} | awk -F/ '{print $3}')" >> $GITHUB_ENV
+
+      - name: Configure SSH
+        uses: benoitchantre/setup-ssh-authentication-action@1.0.1
+        with:
+          private-key: ${{ secrets.SSH_KEY }}
+          ssh-config: ${{ secrets.SSH_CONFIG }}
+          known-hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Create the plugin directory
+        run: ssh ${HOST} "mkdir -p ${DEPLOY_PATH%/}"
+
+      - name: Sync files
+        run: rsync -avz --checksum --delete-after dist/${PLUGIN_NAME}/. "${HOST}:${DEPLOY_PATH%/}/."
+
+      - name: Purge static cache
+        run: ssh ${HOST} "bash -s" < .github/scripts/purge_cache "${DEPLOY_PATH}"

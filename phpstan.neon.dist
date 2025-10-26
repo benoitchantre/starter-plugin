@@ -1,0 +1,13 @@
+parameters:
+	level: 8
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	paths:
+		- starter-plugin.php
+		- includes
+		- src
+	excludePaths:
+		- vendor
+		- node_modules (?)
+		- build (?)
+	tmpDir: .cache/phpstan

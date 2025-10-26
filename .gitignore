@@ -1,0 +1,20 @@
+# Operating system specific files
+.DS_Store
+Thumbs.db
+
+# Cache files
+.cache/*
+!.cache/.gitkeep
+
+# Files created by build
+/build/
+/languages/*
+!/languages/*.pot
+!/languages/*.po
+
+# Dependencies
+/node_modules/
+/vendor/
+
+# Local overrides
+phpcs.xml
