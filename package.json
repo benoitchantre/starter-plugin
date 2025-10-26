@@ -3,7 +3,7 @@
 	"license": "GPL-2.0-or-later",
 	"private": true,
 	"devDependencies": {
-		"@wordpress/scripts": "^30.22.0"
+		"@wordpress/scripts": "^30.26.0"
 	},
 	"prettier": "@wordpress/prettier-config",
 	"scripts": {
