@@ -36,7 +36,7 @@ jobs:
           plugin-name: ${{ vars.PLUGIN_NAME }}
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ env.PLUGIN_NAME }}
           path: dist/${{ env.PLUGIN_NAME }}
