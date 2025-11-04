@@ -15,6 +15,7 @@ A modern WordPress plugin built with PHP 8.1+ and following WordPress coding sta
 - **PHP**: 8.1 or higher
 - **WordPress**: 6.8 or higher
 - **Composer**: For dependency management
+- **Node.js**: 20 or higher (for development)
 
 ## Installation
 
