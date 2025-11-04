@@ -17,15 +17,17 @@ final class CustomTaxonomy {
 	/**
 	 * Taxonomy slug.
 	 *
-	 * @var string
+	 * @var non-empty-string
 	 */
-	public readonly string $slug;
+	private const SLUG = 'custom_category';
 
 	/**
-	 * Constructor.
+	 * Get the taxonomy slug.
+	 *
+	 * @return lowercase-string&non-empty-string
 	 */
-	public function __construct() {
-		$this->slug = 'custom_category';
+	public function get_slug(): string {
+		return self::SLUG;
 	}
 
 	/**
@@ -35,15 +37,6 @@ final class CustomTaxonomy {
 	 */
 	public function init(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
-	}
-
-	/**
-	 * Get the taxonomy slug.
-	 *
-	 * @return string
-	 */
-	public function get_slug(): string {
-		return $this->slug;
 	}
 
 	/**
