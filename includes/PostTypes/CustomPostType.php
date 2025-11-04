@@ -17,15 +17,17 @@ final class CustomPostType {
 	/**
 	 * Post type slug.
 	 *
-	 * @var string
+	 * @var non-empty-string
 	 */
-	public readonly string $slug;
+	private const SLUG = 'custom_post';
 
 	/**
-	 * Constructor.
+	 * Get the post type slug.
+	 *
+	 * @return lowercase-string&non-empty-string
 	 */
-	public function __construct() {
-		$this->slug = 'custom_post';
+	public function get_slug(): string {
+		return self::SLUG;
 	}
 
 	/**
@@ -35,15 +37,6 @@ final class CustomPostType {
 	 */
 	public function init(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-	}
-
-	/**
-	 * Get the post type slug.
-	 *
-	 * @return string
-	 */
-	public function get_slug(): string {
-		return $this->slug;
 	}
 
 	/**
