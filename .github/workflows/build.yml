@@ -119,7 +119,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
         with:
           path: ${{ steps.composer-cache.outputs.dir }}

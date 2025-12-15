@@ -86,7 +86,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
@@ -95,7 +95,7 @@ jobs:
             ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
 
       - name: Cache PHPCS scan cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .cache/phpcs.json
           key: ${{ runner.os }}-phpcs-cache-${{ hashFiles('**/composer.json', 'phpcs.xml.dist') }}
@@ -138,7 +138,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
@@ -147,7 +147,7 @@ jobs:
             ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
 
       - name: Cache PHP compatibility scan cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .cache/phpcompat.json
           key: ${{ runner.os }}-phpcompat-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.json', 'phpcompat.xml.dist') }}
@@ -205,7 +205,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.lock') }}
@@ -214,7 +214,7 @@ jobs:
             ${{ runner.os }}-composer-php${{ env.PHP_VERSION }}
 
       - name: Cache PHPCS scan cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .cache/phpstan
           key: ${{ runner.os }}-phpcs-stan-${{ hashFiles('**/composer.json', 'phpstan.neon.dist') }}
