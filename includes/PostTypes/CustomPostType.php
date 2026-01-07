@@ -91,7 +91,7 @@ final class CustomPostType {
 				'with_front' => false,
 			),
 			'query_var'             => true,
-			'menu_position'         => null,
+			'menu_position'         => 30,
 			'menu_icon'             => 'dashicons-admin-post',
 			'show_in_rest'          => true,
 			'rest_base'             => 'custom-posts',
