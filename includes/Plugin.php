@@ -97,8 +97,8 @@ final class Plugin {
 	 * @return void
 	 */
 	public function activate(): void {
-		// Initialize components first.
-		$this->init();
+		$this->post_type->init();
+		$this->taxonomy->init();
 
 		// Flush rewrite rules after registering post types and taxonomies.
 		flush_rewrite_rules();
