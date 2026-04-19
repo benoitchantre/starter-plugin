@@ -155,7 +155,7 @@ starter-plugin/
 #### JavaScript Configuration
 - **package.json**: WordPress Scripts, Prettier config
 - **.nvmrc**: Node.js version 20
-- **.eslintrc.js**: ESLint rules (exists but not shown)
+- **.eslint.config.js**: ESLint rules (exists but not shown)
 
 #### WordPress Environment Configuration
 - **.wp-env.json**: Local development environment (PHP 8.4, plugin development mode)

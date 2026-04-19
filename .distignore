@@ -3,8 +3,7 @@
 .cursor*
 .distignore
 .editorconfig
-.eslintignore
-.eslintrc.js
+.eslint.config.js
 .git/
 .gitignore
 .github/
