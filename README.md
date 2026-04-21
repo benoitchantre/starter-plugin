@@ -14,8 +14,8 @@ A modern WordPress plugin built with PHP 8.1+ and following WordPress coding sta
 
 - **PHP**: 8.1 or higher
 - **WordPress**: 6.8 or higher
-- **Composer**: For dependency management
-- **Node.js**: 20 or higher (for development)
+- **Composer:** Latest version
+- **Node.js:** 20 or higher (see `.nvmrc` for current version)
 
 ## Installation
 
@@ -23,35 +23,20 @@ A modern WordPress plugin built with PHP 8.1+ and following WordPress coding sta
 2. Run `composer install` to install dependencies
 3. Activate the plugin in WordPress admin
 
-## Development
+## Development Commands
 
-### Setup
+### NPM scripts
+- `npm run start` - Start development mode with hot reload
+- `npm run build` - Build all blocks for production
+- `npm run lint:js` - Lint JavaScript files
+- `npm run format` - Format code
+- `npm run create-block` - Create a new block with guided setup
 
-```bash
-# Install dependencies
-composer install
-
-# Generate autoloader
-composer dump-autoload
-```
-
-### Code Quality
-
-```bash
-# Check code style
-composer run phpcs
-
-# Fix code style issues
-composer run phpcbf
-
-# Run static analysis (automatically uses 512M memory limit)
-composer run phpstan
-
-# Check PHP compatibility
-composer run phpcompat
-```
-
-**Note**: PHPStan is configured to use 512M memory limit to avoid memory exhaustion issues. The configuration also uses single-process mode for better memory efficiency.
+### Composer scripts
+- `composer run phpcs` - Check PHP coding standards
+- `composer run phpcbf` - Fix PHP coding standards
+- `composer run phpcompat` - Check PHP compatibility
+- `composer run phpstan` - Run static analysis on PHP files
 
 ### Project Structure
 
@@ -94,14 +79,14 @@ This plugin follows a simplified Object-Oriented approach:
 
 ## GitHub workflows
 
-| Workflow                | Trigger                                       | Actions                                                                                                         |
-|-------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| PHP Code Quality        | Push/PR to main, PHP file changes             | • Coding standards (PHPCS)<br>• Compatibility checks<br>• Static analysis (PHPStan)                             |
-| JavaScript Code Quality | Push/PR to main, JS file changes              | • Linting (ESLint)<br>• Node.js compatibility checks                                                            |
-| Validate JSON files     | Push/PR to main, theme.json or styles changes | • JSON syntax validation<br>• theme.json schema validation<br>• Block styles validation                         |
-| Build                   | Push/PR to main, build-related changes        | • Build theme assets<br>• Run unit tests<br>• Generate language files<br>• Create distributable archive         |
-| Release                 | New version tag                               | • Build theme<br>• Create GitHub release<br>• Upload theme archive                                              |
-| Deployment              | Manual trigger                                | • Verify PHP compatibility<br>• Validate JSON schema<br>• Build theme assets<br>• Deploy to staging environment |
+| Workflow                | Trigger                                | Actions                                                                                                          |
+|-------------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| PHP Code Quality        | Push/PR to main, PHP file changes      | • Coding standards (PHPCS)<br>• Compatibility checks<br>• Static analysis (PHPStan)                              |
+| JavaScript Code Quality | Push/PR to main, JS file changes       | • Linting (ESLint)<br>• Node.js compatibility checks                                                             |
+| Validate JSON files     | Push/PR to main, block.json changes    | • JSON syntax validation<br>• block.json schema validation                                                       |
+| Build                   | Push/PR to main, build-related changes | • Build assets<br>• Run unit tests<br>• Generate language files<br>• Create distributable archive                |
+| Release                 | New version tag                        | • Build plugin<br>• Create GitHub release<br>• Upload plugin archive                                             |
+| Deployment              | Manual trigger                         | • Verify PHP compatibility<br>• Validate JSON schema<br>• Build plugin assets<br>• Deploy to staging environment |
 
 ## Deployment configuration
 
@@ -133,4 +118,4 @@ The deployment workflow requires the following configuration in your GitHub repo
 
 ### Server requirements
 - SSH access configured with the deployment public key in `~/.ssh/authorized_keys`
-- Write permissions on the theme directory for the SSH-authenticated user
+- Write permissions on the plugin directory for the SSH-authenticated user
