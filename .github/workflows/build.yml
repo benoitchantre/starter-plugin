@@ -8,7 +8,7 @@ on:
       # This file contains the excluded files from the dist archive. Changes could affect the outcome.
       - '.distignore'
       # This file contains the PHP version to use. Changes could affect the outcome.
-      - 'style.css'
+      - 'starter-plugin.php'
       # This file configures the Node.js version to use. Changes could affect the outcome.
       - '.nvmrc'
       # These files configure NPM. Changes could affect the outcome.
@@ -30,7 +30,7 @@ on:
       # This file contains the excluded files from the dist archive. Changes could affect the outcome.
       - '.distignore'
       # This file contains the PHP version to use. Changes could affect the outcome.
-      - 'style.css'
+      - 'starter-plugin.php'
       # This file configures the Node.js version to use. Changes could affect the outcome.
       - '.nvmrc'
       # These files configure NPM. Changes could affect the outcome.
@@ -101,7 +101,7 @@ jobs:
         id: composer-autoloader
         run: echo "is-used=$(jq -e '.autoload' composer.json >/dev/null && echo true || echo false)" >> $GITHUB_OUTPUT
 
-      - name: Extract required PHP version from starter-blocks.php
+      - name: Extract required PHP version from starter-plugin.php
         id: required-php-version
         if: ${{ steps.composer-require.outputs.is-used == 'true' || steps.composer-autoloader.outputs.is-used == 'true' }}
         run: echo "version=$(./.github/scripts/extract_required_php_version)" >> $GITHUB_OUTPUT
