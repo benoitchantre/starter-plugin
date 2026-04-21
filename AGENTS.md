@@ -8,7 +8,7 @@
 - **Type**: WordPress plugin
 - **PHP Version**: 8.1+ (strict requirement)
 - **WordPress Version**: 6.8+ minimum
-- **Node.js Version**: 20 (see .nvmrc)
+- **Node.js Version**: 24 (see .nvmrc)
 - **Languages**: PHP (backend), JavaScript (frontend), CSS (styles)
 - **Build System**: WordPress Scripts (wp-scripts) for frontend assets
 - **Dependencies**: Composer (PHP), npm (JavaScript)
@@ -154,7 +154,7 @@ starter-plugin/
 
 #### JavaScript Configuration
 - **package.json**: WordPress Scripts, Prettier config
-- **.nvmrc**: Node.js version 20
+- **.nvmrc**: Node.js version 24
 - **.eslint.config.js**: ESLint rules (exists but not shown)
 
 #### WordPress Environment Configuration
