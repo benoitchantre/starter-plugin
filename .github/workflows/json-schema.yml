@@ -56,12 +56,21 @@ jobs:
             jq empty "$file"
           done
 
-      - name: Validate block.json files against WordPress block schema
+      - name: Install check-jsonschema
+        run: pipx install check-jsonschema
+
+      - name: Validate block.json files against their schema
         if: ${{ steps.check-blocks.outputs.block_files != '' }}
-        uses: cardinalby/schema-validator-action@v3
-        with:
-          file: 'src/blocks/**/block.json'
-          schema: 'https://schemas.wp.org/trunk/block.json'
+        run: |
+          for file in ${{ steps.check-blocks.outputs.block_files }}; do
+            SCHEMA=$(jq -r '."$schema" // empty' "$file")
+            if [ -z "$SCHEMA" ]; then
+              echo "ERROR: Missing '\$schema' field in $file"
+              exit 1
+            fi
+            echo "Validating $file against $SCHEMA"
+            check-jsonschema --schemafile "$SCHEMA" "$file"
+          done
 
       - name: Validate block.json required fields
         if: ${{ steps.check-blocks.outputs.block_files != '' }}
@@ -89,14 +98,14 @@ jobs:
             # Validate block name format (namespace/block-name)
             BLOCK_NAME=$(jq -r '.name' "$file" 2>/dev/null || echo "")
             if [[ "$BLOCK_NAME" != *"/"* ]]; then
-              echo "ERROR: Block name '$BLOCK_NAME' in $file must include a namespace (e.g., 'starter-blocks/my-block')"
+              echo "ERROR: Block name '$BLOCK_NAME' in $file must include a namespace (e.g., 'starter-plugin/my-block')"
               HAS_ERRORS=1
             fi
 
             # Check if textdomain matches plugin
             TEXTDOMAIN=$(jq -r '.textdomain // empty' "$file" 2>/dev/null || echo "")
-            if [ ! -z "$TEXTDOMAIN" ] && [ "$TEXTDOMAIN" != "starter-blocks" ]; then
-              echo "WARNING: textdomain '$TEXTDOMAIN' in $file should be 'starter-blocks'"
+            if [ ! -z "$TEXTDOMAIN" ] && [ "$TEXTDOMAIN" != "starter-plugin" ]; then
+              echo "WARNING: textdomain '$TEXTDOMAIN' in $file should be 'starter-plugin'"
             fi
           done
 
