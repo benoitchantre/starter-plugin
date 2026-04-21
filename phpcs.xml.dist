@@ -27,7 +27,7 @@
 	<exclude-pattern>.cache/*</exclude-pattern>
 
 	<!-- Exclude tests -->
-	<exclude-pattern>test/*</exclude-pattern>
+	<exclude-pattern>tests/*</exclude-pattern>
 
 	<!-- Exclude build files -->
 	<exclude-pattern>build/*</exclude-pattern>
