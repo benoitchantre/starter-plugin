@@ -2,7 +2,7 @@
 Contributors: benoitchantre
 Tags: custom-post-type, taxonomy, polylang, gutenberg
 Requires at least: 6.8
-Tested up to: 6.8.3
+Tested up to: 6.9.4
 Requires PHP: 8.1
 Stable tag: 0.0.1
 License: GPLv2 or later
@@ -29,11 +29,5 @@ Starter Plugin is a modern WordPress plugin built with PHP 8.1+ that provides:
 
 == Changelog ==
 
-= 1.0.0 =
+= 0.0.1 =
 * Initial release
-* Custom post type "Custom Posts" with full WordPress integration
-* Custom taxonomy "Categories" for content organization
-* Polylang integration for multilingual support
-* Modern PHP 8.1+ codebase with strict typing
-* WordPress Coding Standards compliance
-* REST API support for headless applications
