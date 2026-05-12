@@ -41,6 +41,7 @@
 	<exclude-pattern>node_modules/*</exclude-pattern>
 	<exclude-pattern>vendor/dealerdirect/phpcodesniffer-composer-installer/*</exclude-pattern>
 	<exclude-pattern>vendor/dealerdirect/phpcompatibility-wp/*</exclude-pattern>
+	<exclude-pattern>vendor/johnbillion/wp-compat/*</exclude-pattern>
 	<exclude-pattern>vendor/php-stubs/*</exclude-pattern>
 	<exclude-pattern>vendor/phpcompatibility/*</exclude-pattern>
 	<exclude-pattern>vendor/phpcsstandards/*</exclude-pattern>
